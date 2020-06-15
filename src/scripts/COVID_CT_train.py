@@ -14,6 +14,9 @@ from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, Learning
 from sklearn.metrics import confusion_matrix,f1_score
 import os
 os.chdir(os.path.dirname(__file__)) # set current .py file as working directory
+import sys
+CONTENT_ROOT_IND = os.path.dirname(__file__).find("src") - 1
+sys.path.insert(0,os.path.dirname(__file__)[:CONTENT_ROOT_IND])
 # customized packages
 from src.lib.COVID_CT_dataset import CovidCTDataset
 from src.lib.helper_func import *
