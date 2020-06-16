@@ -17,7 +17,7 @@ os.chdir(os.path.dirname(__file__)) # set current .py file as working directory
 import sys
 sys.path.insert(0,"../..")
 # customized packages
-from src.lib.COVID_CT_dataset import CovidCTDataset
+from src.lib.COVID_CT_dataset import *
 from src.lib.helper_func import *
 
 class COVID_CT_Sys(pl.LightningModule):
@@ -34,7 +34,7 @@ class COVID_CT_Sys(pl.LightningModule):
 
         self.model = models.densenet169(pretrained=True)
         num_ftrs = self.model.classifier.in_features
-        self.model.classifier = nn.Linear(num_ftrs, 2)
+        self.model.classifier = nn.Linear(num_ftrs, hparams.num_class)
         self.init_weights(self.model.classifier)
         # self.model.load_state_dict(torch.load(hparams.pretrained_path))
 
@@ -271,6 +271,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--learning_rate', type=float, default=0.0005)
     parser.add_argument('--max_epochs', type=int, default=300)
+    parser.add_argument('--num_class', type=int, default=2)
 
     # Debug Info
     parser.add_argument('--log_histogram', type=bool, default=False, help='')
