@@ -136,7 +136,7 @@ class COVID_CT_Sys(pl.LightningModule):
         Confusion_matrix = confusion_matrix(y_total.cpu(), pred_total.cpu())
         print("\n Confusion_matrix: \n" ,Confusion_matrix)
         print("val_loss = ",avg_loss.cpu())
-        logs = {"F1_score":F1_score,"val_loss":avg_loss}
+        logs = {"F1_score":torch.tensor(F1_score),"val_loss":avg_loss}
         return {'log': logs}
 
     def test_step(self, batch, batch_idx):
