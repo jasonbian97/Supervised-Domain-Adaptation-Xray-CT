@@ -271,6 +271,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--learning_rate', type=float, default=0.0005)
     parser.add_argument('--max_epochs', type=int, default=300)
+    parser.add_argument('--loss_w1', type=float, default=1., help='')
     parser.add_argument('--num_class', type=int, default=2)
 
     # Debug Info
