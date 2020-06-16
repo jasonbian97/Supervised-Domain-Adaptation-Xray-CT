@@ -15,8 +15,7 @@ from sklearn.metrics import confusion_matrix,f1_score
 import os
 os.chdir(os.path.dirname(__file__)) # set current .py file as working directory
 import sys
-CONTENT_ROOT_IND = os.path.dirname(__file__).find("src") - 1
-sys.path.insert(0,os.path.dirname(__file__)[:CONTENT_ROOT_IND])
+sys.path.insert(0,"../..")
 # customized packages
 from src.lib.COVID_CT_dataset import CovidCTDataset
 from src.lib.helper_func import *
@@ -280,8 +279,8 @@ if __name__ == '__main__':
     temp_args = parser.parse_known_args()
 
     # let the model add what it wants
-    if temp_args[0].dataset_name == 'COVID-CT':
-        parser = COVID_CT_Sys.add_model_specific_args(parser)
+    # if temp_args[0].dataset_name == 'COVID-CT':
+    parser = COVID_CT_Sys.add_model_specific_args(parser)
 
     args = parser.parse_args()
 
