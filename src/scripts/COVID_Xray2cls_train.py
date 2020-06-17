@@ -113,7 +113,7 @@ class COVID_Xray2cls_Sys(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         x, y = batch
         logits = self(x)
-        criterion = nn.CrossEntropyLoss()
+        criterion = nn.CrossEntropyLoss(weight=torch.tensor([1., self.hparams.loss_w1]).cuda())
         loss = criterion(logits, y)
         # compute confucsion matrix on this batch
         pred = logits.argmax(dim=1).view_as(y)
