@@ -142,7 +142,7 @@ class Mixed_COVID_CT_Xray_Sys(pl.LightningModule):
         pred_total = torch.cat([x['pred'] for x in outputs]).view(-1)
         y_total = torch.cat([x['label'] for x in outputs]).view(-1)
         val_acc = torch.mean((pred_total.cpu() == y_total.cpu()).type(torch.float))
-        F1_score = f1_score(y_total.cpu(), pred_total.cpu(), average="micro")
+        F1_score = torch.tensor(f1_score(y_total.cpu(),pred_total.cpu(),average="micro"))
         Confusion_matrix = confusion_matrix(y_total.cpu(), pred_total.cpu())
         print("\n Confusion_matrix: \n", Confusion_matrix)
         print("val_loss = ", avg_loss.cpu())
