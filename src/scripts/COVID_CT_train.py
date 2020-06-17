@@ -107,7 +107,7 @@ class COVID_CT_Sys(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=self.hparams.learning_rate)
         # scheduler = StepLR(optimizer, step_size=300)
-        scheduler = CosineAnnealingLR(optimizer, self.trainer.max_epochs, 10e-6)
+        scheduler = CosineAnnealingLR(optimizer, self.trainer.max_epochs, self.hparams.cos_lr_min)
         return {"optimizer":optimizer,"lr_scheduler":scheduler}
 
     def training_step(self, batch, batch_idx):
@@ -132,11 +132,13 @@ class COVID_CT_Sys(pl.LightningModule):
         avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
         pred_total = torch.cat([x['pred'] for x in outputs]).view(-1)
         y_total = torch.cat([x['label'] for x in outputs]).view(-1)
+        val_acc = torch.mean((pred_total.cpu() == y_total.cpu()).type(torch.float))
         F1_score = f1_score(y_total.cpu(),pred_total.cpu(),average="micro")
         Confusion_matrix = confusion_matrix(y_total.cpu(), pred_total.cpu())
         print("\n Confusion_matrix: \n" ,Confusion_matrix)
         print("val_loss = ",avg_loss.cpu())
-        logs = {"F1_score":torch.tensor(F1_score),"val_loss":avg_loss}
+        print("val_acc = ", val_acc)
+        logs = {"F1_score":F1_score,"val_acc": val_acc,"val_loss":avg_loss}
         return {'log': logs}
 
     def test_step(self, batch, batch_idx):
@@ -270,6 +272,7 @@ if __name__ == '__main__':
     parser.add_argument('--freeze_epochs', type=int, default=30)
     parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--learning_rate', type=float, default=0.0005)
+    parser.add_argument('--cos_lr_min', type=float, default=5e-7)
     parser.add_argument('--max_epochs', type=int, default=300)
     parser.add_argument('--loss_w1', type=float, default=1., help='')
     parser.add_argument('--num_class', type=int, default=2)
