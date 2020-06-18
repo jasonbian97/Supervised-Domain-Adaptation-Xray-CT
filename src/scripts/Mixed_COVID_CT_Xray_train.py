@@ -17,7 +17,7 @@ os.chdir(os.path.dirname(__file__)) # set current .py file as working directory
 import sys
 sys.path.insert(0,"../..")
 # customized packages
-from src.lib.COVID_CT_dataset import *
+from src.lib.dataset import *
 from src.lib.helper_func import *
 
 class Mixed_COVID_CT_Xray_Sys(pl.LightningModule):
@@ -33,7 +33,7 @@ class Mixed_COVID_CT_Xray_Sys(pl.LightningModule):
             self.dataset_info = self.dataset_info[hparams.dataset_name]
 
         # split train and val
-        self.data_split,self.dataset_label = self.split_train_val()
+        # self.data_split,self.dataset_label = self.split_train_val()
 
         self.model = models.densenet169(pretrained=True)
         num_ftrs = self.model.classifier.in_features
@@ -41,34 +41,34 @@ class Mixed_COVID_CT_Xray_Sys(pl.LightningModule):
         self.init_weights(self.model.classifier)
         # self.model.load_state_dict(torch.load(hparams.pretrained_path))
 
-    def split_train_val(self):
-        import sklearn.model_selection
-
-
-        CTnoncovid_img_list = [os.path.join(self.dataset_info["CTnoncovid"], p) for p in
-                             os.listdir(self.dataset_info["CTnoncovid"])]
-        CTcovid_img_list = [os.path.join(self.dataset_info["CTcovid"], p) for p in
-                            os.listdir(self.dataset_info["CTcovid"])]
-        CTlabel = [0] * len(CTnoncovid_img_list) + [1] * len(CTcovid_img_list)
-        CTsplit =  sklearn.model_selection.train_test_split(CTnoncovid_img_list + CTcovid_img_list , CTlabel,
-                                                            test_size=0.3, random_state=66)
-
-        Xraynoncovid_img_list = [os.path.join(self.dataset_info["Xraynoncovid"], p) for p in
-                             os.listdir(self.dataset_info["Xraynoncovid"])]
-        Xraycovid_img_list = [os.path.join(self.dataset_info["Xraycovid"], p) for p in
-                            os.listdir(self.dataset_info["Xraycovid"])]
-        Xraylabel = [0] * len(Xraynoncovid_img_list) + [1] * len(Xraycovid_img_list)
-        Xraysplit = sklearn.model_selection.train_test_split(Xraynoncovid_img_list + Xraycovid_img_list, Xraylabel,
-                                                           test_size=0.3, random_state=66)
-        # "0":CT dataset; "1":Xray dataset
-        ds_train_label = [0] * len(CTsplit[0]) + [1] * len(Xraysplit[0])
-        ds_val_label = [0] * len(CTsplit[1]) + [1] * len(Xraysplit[1])
-        dataset_label = {"train":ds_train_label,"val":ds_val_label }
-        data_split = []
-        for ct,xray in zip(CTsplit,Xraysplit):
-            data_split.append(ct+xray)
-
-        return data_split,dataset_label
+    # def split_train_val(self):
+    #     import sklearn.model_selection
+    #
+    #
+    #     CTnoncovid_img_list = [os.path.join(self.dataset_info["CTnoncovid"], p) for p in
+    #                          os.listdir(self.dataset_info["CTnoncovid"])]
+    #     CTcovid_img_list = [os.path.join(self.dataset_info["CTcovid"], p) for p in
+    #                         os.listdir(self.dataset_info["CTcovid"])]
+    #     CTlabel = [0] * len(CTnoncovid_img_list) + [1] * len(CTcovid_img_list)
+    #     CTsplit =  sklearn.model_selection.train_test_split(CTnoncovid_img_list + CTcovid_img_list , CTlabel,
+    #                                                         test_size=0.3, random_state=66)
+    #
+    #     Xraynoncovid_img_list = [os.path.join(self.dataset_info["Xraynoncovid"], p) for p in
+    #                          os.listdir(self.dataset_info["Xraynoncovid"])]
+    #     Xraycovid_img_list = [os.path.join(self.dataset_info["Xraycovid"], p) for p in
+    #                         os.listdir(self.dataset_info["Xraycovid"])]
+    #     Xraylabel = [0] * len(Xraynoncovid_img_list) + [1] * len(Xraycovid_img_list)
+    #     Xraysplit = sklearn.model_selection.train_test_split(Xraynoncovid_img_list + Xraycovid_img_list, Xraylabel,
+    #                                                        test_size=0.3, random_state=66)
+    #     # "0":CT dataset; "1":Xray dataset
+    #     ds_train_label = [0] * len(CTsplit[0]) + [1] * len(Xraysplit[0])
+    #     ds_val_label = [0] * len(CTsplit[1]) + [1] * len(Xraysplit[1])
+    #     dataset_label = {"train":ds_train_label,"val":ds_val_label }
+    #     data_split = []
+    #     for ct,xray in zip(CTsplit,Xraysplit):
+    #         data_split.append(ct+xray)
+    #
+    #     return data_split,dataset_label
 
     def init_weights(self, m):
         for m in self.modules():
@@ -96,7 +96,7 @@ class Mixed_COVID_CT_Xray_Sys(pl.LightningModule):
                                  std=[0.33165374, 0.33165374, 0.33165374])
         ])
         # data
-        trainset = MixedDataset(self.data_split,self.dataset_label, train=True, transform=train_transformer)
+        trainset = MixedDataset(self.dataset_info,train=True, transform=train_transformer)
         dataloader = DataLoader(trainset, batch_size=self.hparams.batch_size, drop_last=False, shuffle=True,
                                 num_workers=6)
 
@@ -109,7 +109,7 @@ class Mixed_COVID_CT_Xray_Sys(pl.LightningModule):
             transforms.Normalize(mean=[0.45271412, 0.45271412, 0.45271412],
                                  std=[0.33165374, 0.33165374, 0.33165374])
         ])
-        valset = MixedDataset(self.data_split,self.dataset_label, train=False, transform=val_transformer)
+        valset = MixedDataset(self.dataset_info, train=False, transform=val_transformer)
         return DataLoader(valset, batch_size=self.hparams.batch_size, drop_last=False, shuffle=False, num_workers=6)
 
     def forward(self, x):
@@ -148,18 +148,21 @@ class Mixed_COVID_CT_Xray_Sys(pl.LightningModule):
 
         val_acc = torch.mean((pred_total.cpu() == y_total.cpu()).type(torch.float))
         F1_score = torch.tensor(f1_score(y_total.cpu(),pred_total.cpu(),average="micro"))
-        Confusion_matrix = confusion_matrix(y_total.cpu(), pred_total.cpu())
 
         ct_ind = torch.where(ds_label==0)
         CT_F1_score = torch.tensor(f1_score(y_total[ct_ind].cpu(),pred_total[ct_ind].cpu(),average="micro"))
+        ct_Confusion_matrix = confusion_matrix(y_total[ct_ind].cpu(), pred_total[ct_ind].cpu())
+
         xray_ind = torch.where(ds_label==1)
         Xray_F1_score = torch.tensor(f1_score(y_total[xray_ind].cpu(),pred_total[xray_ind].cpu(),average="micro"))
+        xray_Confusion_matrix = confusion_matrix(y_total[xray_ind].cpu(), pred_total[xray_ind].cpu())
 
-        print("\n Confusion_matrix: \n", Confusion_matrix)
+
         print("val_loss = ", avg_loss.cpu())
-        print("val_acc = ", val_acc)
-        print("Xray_F1_score = ",Xray_F1_score)
         print("CT_F1_score=",CT_F1_score)
+        print("Xray_F1_score = ",Xray_F1_score)
+        print("ct_Confusion_matrix = \n",ct_Confusion_matrix)
+        print("xray_Confusion_matrix = \n",xray_Confusion_matrix)
         logs = {"F1_score":F1_score,"val_acc": val_acc,"val_loss":avg_loss,
                 "CT_F1_score":CT_F1_score, "Xray_F1_score":Xray_F1_score}
         return {'log': logs}
@@ -183,15 +186,17 @@ class Mixed_COVID_CT_Xray_Sys(pl.LightningModule):
         return {'test_loss': avg_loss, 'log': tensorboard_logs}
 
     def on_epoch_start(self):
-        if self.current_epoch == self.hparams.freeze_epochs:
-            self.unfreeze_for_transfer()
+        if self.hparams.freeze_epochs > 0:
+            if self.current_epoch == self.hparams.freeze_epochs:
+                self.unfreeze_for_transfer()
 
     def on_epoch_end(self):
         if self.hparams.log_histogram:
             self.log_histogram()
 
     def on_train_start(self):
-        self.freeze_for_transfer()
+        if self.hparams.freeze_epochs > 0:
+            self.freeze_for_transfer()
 
     """=============================self-defined function============================="""
 
@@ -258,7 +263,7 @@ def main(args):
                       checkpoint_callback=checkpoint_callback,
                       callbacks=[lr_logger],
                       gpus=args.gpus,
-                      default_save_path='../../results/logs/{}'.format(os.path.basename(__file__)[:-3]),
+                      default_root_dir = '../../results/logs/{}'.format(os.path.basename(__file__)[:-3]),
                       max_epochs=args.max_epochs)
 
     trainer.fit(Sys)
@@ -282,7 +287,7 @@ if __name__ == '__main__':
     parser.add_argument('--learning_rate', type=float, default=0.0005)
     parser.add_argument('--cos_lr_min', type=float, default=5e-7)
     parser.add_argument('--max_epochs', type=int, default=300)
-    parser.add_argument('--loss_w1', type=float, default=0.25,
+    parser.add_argument('--loss_w1', type=float, default=0.45,
                         help='CrossEntropy loss weight for COVID type (Majority)')
     parser.add_argument('--num_class', type=int, default=2)
     # Debug Info

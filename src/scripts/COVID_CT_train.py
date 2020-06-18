@@ -17,7 +17,7 @@ os.chdir(os.path.dirname(__file__)) # set current .py file as working directory
 import sys
 sys.path.insert(0,"../..")
 # customized packages
-from src.lib.COVID_CT_dataset import *
+from src.lib.dataset import *
 from src.lib.helper_func import *
 
 class COVID_CT_Sys(pl.LightningModule):
@@ -251,7 +251,7 @@ def main(args):
                           checkpoint_callback = checkpoint_callback,
                           callbacks=[lr_logger],
                           gpus=args.gpus,
-                          default_save_path='../../results/logs/{}'.format(os.path.basename(__file__)[:-3]),
+                          default_root_dir='../../results/logs/{}'.format(os.path.basename(__file__)[:-3]),
                           max_epochs=args.max_epochs)
 
         trainer.fit(Sys)

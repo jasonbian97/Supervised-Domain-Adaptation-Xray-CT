@@ -17,7 +17,7 @@ os.chdir(os.path.dirname(__file__)) # set current .py file as working directory
 import sys
 sys.path.insert(0,"../..")
 # customized packages
-from src.lib.COVID_CT_dataset import *
+from src.lib.dataset import *
 from src.lib.helper_func import *
 
 class COVID_Xray2cls_Sys(pl.LightningModule):
@@ -32,23 +32,11 @@ class COVID_Xray2cls_Sys(pl.LightningModule):
             self.dataset_info = json.load(fp)
             self.dataset_info=self.dataset_info[hparams.dataset_name]
 
-        # split train and val
-        self.data_split = self.split_train_val()
-
         self.model = models.densenet169(pretrained=True)
         num_ftrs = self.model.classifier.in_features
         self.model.classifier = nn.Linear(num_ftrs, hparams.num_class)
         self.init_weights(self.model.classifier)
         # self.model.load_state_dict(torch.load(hparams.pretrained_path))
-
-    def split_train_val(self):
-        import sklearn.model_selection
-        noncovid_img_list  = [os.path.join(self.dataset_info["noncovid"],p) for p in os.listdir(self.dataset_info["noncovid"])]
-        covid_img_list = [os.path.join(self.dataset_info["covid"],p) for p in os.listdir(self.dataset_info["covid"])]
-        img_list = covid_img_list + noncovid_img_list
-        label = [0] * len(noncovid_img_list) + [1] * len(covid_img_list)
-        data_split = sklearn.model_selection.train_test_split(img_list,label,test_size=0.3,random_state = 66)
-        return data_split
 
     def init_weights(self, m):
         for m in self.modules():
@@ -76,7 +64,7 @@ class COVID_Xray2cls_Sys(pl.LightningModule):
                                  std=[0.33165374, 0.33165374, 0.33165374])
         ])
         # data
-        trainset = CovidXray2clsDataset(self.data_split, train = True, transform=train_transformer)
+        trainset = CovidXray2clsDataset(self.dataset_info, train = True, transform=train_transformer)
         dataloader =DataLoader(trainset, batch_size=self.hparams.batch_size, drop_last=False, shuffle=True, num_workers=4)
 
         return dataloader
@@ -88,7 +76,7 @@ class COVID_Xray2cls_Sys(pl.LightningModule):
             transforms.Normalize(mean=[0.45271412, 0.45271412, 0.45271412],
                                  std=[0.33165374, 0.33165374, 0.33165374])
         ])
-        valset = CovidXray2clsDataset(self.data_split, train = False, transform=val_transformer)
+        valset = CovidXray2clsDataset(self.dataset_info, train = False, transform=val_transformer)
         return DataLoader(valset, batch_size=self.hparams.batch_size, drop_last=False, shuffle=False, num_workers=4)
 
     def forward(self,x):
@@ -228,7 +216,7 @@ def main(args):
                       checkpoint_callback = checkpoint_callback,
                       callbacks=[lr_logger],
                       gpus=args.gpus,
-                      default_save_path='../../results/logs/{}'.format(os.path.basename(__file__)[:-3]),
+                      default_root_dir='../../results/logs/{}'.format(os.path.basename(__file__)[:-3]),
                       max_epochs=args.max_epochs)
 
     trainer.fit(Sys)
