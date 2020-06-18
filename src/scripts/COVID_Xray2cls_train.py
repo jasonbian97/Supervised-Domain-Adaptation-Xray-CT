@@ -63,9 +63,9 @@ class COVID_Xray2cls_Sys(pl.LightningModule):
     def train_dataloader(self):
         # transforms
         train_transformer = transforms.Compose([
-            # transforms.Resize(256),
-            # transforms.RandomResizedCrop((224), scale=(0.8, 1.0)),
-            transforms.Resize((224,224)),
+            transforms.Resize(256),
+            transforms.RandomResizedCrop((224), scale=(0.5, 1.0)),
+            # transforms.Resize((224,224)),
             transforms.RandomHorizontalFlip(),
                 # transforms.RandomRotation(90),
             transforms.RandomAffine(degrees=15,translate = (0.1,0.1),shear = (-5,5,-5,5)),
@@ -97,8 +97,8 @@ class COVID_Xray2cls_Sys(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = Adam(self.parameters(), lr=self.hparams.learning_rate)
-        # scheduler = StepLR(optimizer, step_size=300)
-        scheduler = CosineAnnealingLR(optimizer, self.trainer.max_epochs, self.hparams.cos_lr_min)
+        scheduler = StepLR(optimizer, step_size=9999999999999)
+        # scheduler = CosineAnnealingLR(optimizer, self.trainer.max_epochs, self.hparams.cos_lr_min)
         return {"optimizer":optimizer,"lr_scheduler":scheduler}
 
     def training_step(self, batch, batch_idx):
