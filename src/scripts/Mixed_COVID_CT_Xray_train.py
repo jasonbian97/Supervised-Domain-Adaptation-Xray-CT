@@ -96,7 +96,7 @@ class Mixed_COVID_CT_Xray_Sys(pl.LightningModule):
                                  std=[0.33165374, 0.33165374, 0.33165374])
         ])
         # data
-        trainset = CovidXray2clsDataset(self.data_split,self.dataset_label, train=True, transform=train_transformer)
+        trainset = MixedDataset(self.data_split,self.dataset_label, train=True, transform=train_transformer)
         dataloader = DataLoader(trainset, batch_size=self.hparams.batch_size, drop_last=False, shuffle=True,
                                 num_workers=6)
 
@@ -109,7 +109,7 @@ class Mixed_COVID_CT_Xray_Sys(pl.LightningModule):
             transforms.Normalize(mean=[0.45271412, 0.45271412, 0.45271412],
                                  std=[0.33165374, 0.33165374, 0.33165374])
         ])
-        valset = CovidXray2clsDataset(self.data_split,self.dataset_label, train=False, transform=val_transformer)
+        valset = MixedDataset(self.data_split,self.dataset_label, train=False, transform=val_transformer)
         return DataLoader(valset, batch_size=self.hparams.batch_size, drop_last=False, shuffle=False, num_workers=6)
 
     def forward(self, x):
