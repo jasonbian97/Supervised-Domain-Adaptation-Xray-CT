@@ -12,9 +12,13 @@
     "noncovid": "../../data/cache/COVID-Xray_NonCOVID19Xray"
   },
   "Mixed_COVID_CT_Xray": {
-    "CTcovid": "../../data/raw/COVID-CT/Images-processed/CT_COVID",
-    "CTnoncovid": "../../data/raw/COVID-CT/Images-processed/CT_NonCOVID",
-    "Xraycovid": "../../data/cache/COVID-Xray_COVID19Xray",
-    "Xraynoncovid": "../../data/cache/COVID-Xray_NonCOVID19Xray"
+    "COVID-CT": {
+      "data_split": "../../data/raw/COVID-CT/Data-split",
+      "image_folder": "../../data/raw/COVID-CT/Images-processed"
+    },
+    "COVID-Xray2cls": {
+      "covid": "../../data/cache/COVID-Xray_COVID19Xray",
+      "noncovid": "../../data/cache/COVID-Xray_NonCOVID19Xray"
+    }
   }
 }
