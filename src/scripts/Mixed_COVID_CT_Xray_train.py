@@ -33,7 +33,7 @@ class Mixed_COVID_CT_Xray_Sys(pl.LightningModule):
             self.dataset_info = self.dataset_info[hparams.dataset_name]
 
         # split train and val
-        self.data_split = self.split_train_val()
+        self.data_split,self.dataset_label = self.split_train_val()
 
         self.model = models.densenet169(pretrained=True)
         num_ftrs = self.model.classifier.in_features
@@ -60,12 +60,15 @@ class Mixed_COVID_CT_Xray_Sys(pl.LightningModule):
         Xraylabel = [0] * len(Xraynoncovid_img_list) + [1] * len(Xraycovid_img_list)
         Xraysplit = sklearn.model_selection.train_test_split(Xraynoncovid_img_list + Xraycovid_img_list, Xraylabel,
                                                            test_size=0.3, random_state=66)
-
+        # "0":CT dataset; "1":Xray dataset
+        ds_train_label = [0] * len(CTsplit[0]) + [1] * len(Xraysplit[0])
+        ds_val_label = [0] * len(CTsplit[1]) + [1] * len(Xraysplit[1])
+        dataset_label = {"train":ds_train_label,"val":ds_val_label }
         data_split = []
-        for p,q in zip(CTsplit,Xraysplit):
-            data_split.append(q+p)
+        for ct,xray in zip(CTsplit,Xraysplit):
+            data_split.append(ct+xray)
 
-        return data_split
+        return data_split,dataset_label
 
     def init_weights(self, m):
         for m in self.modules():
@@ -93,9 +96,9 @@ class Mixed_COVID_CT_Xray_Sys(pl.LightningModule):
                                  std=[0.33165374, 0.33165374, 0.33165374])
         ])
         # data
-        trainset = CovidXray2clsDataset(self.data_split, train=True, transform=train_transformer)
+        trainset = CovidXray2clsDataset(self.data_split,self.dataset_label, train=True, transform=train_transformer)
         dataloader = DataLoader(trainset, batch_size=self.hparams.batch_size, drop_last=False, shuffle=True,
-                                num_workers=4)
+                                num_workers=6)
 
         return dataloader
 
@@ -106,8 +109,8 @@ class Mixed_COVID_CT_Xray_Sys(pl.LightningModule):
             transforms.Normalize(mean=[0.45271412, 0.45271412, 0.45271412],
                                  std=[0.33165374, 0.33165374, 0.33165374])
         ])
-        valset = CovidXray2clsDataset(self.data_split, train=False, transform=val_transformer)
-        return DataLoader(valset, batch_size=self.hparams.batch_size, drop_last=False, shuffle=False, num_workers=4)
+        valset = CovidXray2clsDataset(self.data_split,self.dataset_label, train=False, transform=val_transformer)
+        return DataLoader(valset, batch_size=self.hparams.batch_size, drop_last=False, shuffle=False, num_workers=6)
 
     def forward(self, x):
         x = self.model(x)
@@ -120,7 +123,7 @@ class Mixed_COVID_CT_Xray_Sys(pl.LightningModule):
         return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
     def training_step(self, batch, batch_idx):
-        data, label = batch
+        data, label, ds_label = batch
         output = self(data)
         criterion = nn.CrossEntropyLoss(weight=torch.tensor([1., self.hparams.loss_w1]).cuda())
         loss = criterion(output, label.long())
@@ -129,25 +132,36 @@ class Mixed_COVID_CT_Xray_Sys(pl.LightningModule):
         return {'loss': loss, 'log': logs}
 
     def validation_step(self, batch, batch_idx):
-        x, y = batch
+        x, y, ds_label = batch
         logits = self(x)
         criterion = nn.CrossEntropyLoss(weight=torch.tensor([1., self.hparams.loss_w1]).cuda())
         loss = criterion(logits, y)
         # compute confucsion matrix on this batch
         pred = logits.argmax(dim=1).view_as(y)
-        return {'val_loss': loss, "pred": pred, "label": y}
+        return {'val_loss': loss, "pred": pred, "label": y, "ds_label":ds_label}
 
     def validation_epoch_end(self, outputs):
         avg_loss = torch.stack([x['val_loss'] for x in outputs]).mean()
         pred_total = torch.cat([x['pred'] for x in outputs]).view(-1)
         y_total = torch.cat([x['label'] for x in outputs]).view(-1)
+        ds_label = torch.cat([x['ds_label'] for x in outputs]).view(-1)
+
         val_acc = torch.mean((pred_total.cpu() == y_total.cpu()).type(torch.float))
         F1_score = torch.tensor(f1_score(y_total.cpu(),pred_total.cpu(),average="micro"))
         Confusion_matrix = confusion_matrix(y_total.cpu(), pred_total.cpu())
+
+        ct_ind = torch.where(ds_label==0)
+        CT_F1_score = torch.tensor(f1_score(y_total[ct_ind].cpu(),pred_total[ct_ind].cpu(),average="micro"))
+        xray_ind = torch.where(ds_label==1)
+        Xray_F1_score = torch.tensor(f1_score(y_total[xray_ind].cpu(),pred_total[xray_ind].cpu(),average="micro"))
+
         print("\n Confusion_matrix: \n", Confusion_matrix)
         print("val_loss = ", avg_loss.cpu())
         print("val_acc = ", val_acc)
-        logs = {"F1_score":F1_score,"val_acc": val_acc,"val_loss":avg_loss}
+        print("Xray_F1_score = ",Xray_F1_score)
+        print("CT_F1_score=",CT_F1_score)
+        logs = {"F1_score":F1_score,"val_acc": val_acc,"val_loss":avg_loss,
+                "CT_F1_score":CT_F1_score, "Xray_F1_score":Xray_F1_score}
         return {'log': logs}
 
     def test_step(self, batch, batch_idx):
@@ -273,7 +287,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_class', type=int, default=2)
     # Debug Info
     parser.add_argument('--log_histogram', type=bool, default=False, help='')
-
+    parser.add_argument('--note', type=str, default="", help='')
     # THIS LINE IS KEY TO PULL THE MODEL NAME
     temp_args = parser.parse_known_args()
 

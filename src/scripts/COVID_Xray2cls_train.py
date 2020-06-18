@@ -253,7 +253,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_epochs', type=int, default=300)
     parser.add_argument('--loss_w1', type=float, default=0.25, help='CrossEntropy loss weight for COVID type (Majority)')
     parser.add_argument('--num_class', type=int, default=2)
-
+    parser.add_argument('--note', type=str, default="", help='')
     # Debug Info
     parser.add_argument('--log_histogram', type=bool, default=False, help='')
 

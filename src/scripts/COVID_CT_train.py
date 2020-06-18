@@ -279,7 +279,7 @@ if __name__ == '__main__':
 
     # Debug Info
     parser.add_argument('--log_histogram', type=bool, default=False, help='')
-
+    parser.add_argument('--note', type=str, default="", help='')
     # THIS LINE IS KEY TO PULL THE MODEL NAME
     temp_args = parser.parse_known_args()
 
