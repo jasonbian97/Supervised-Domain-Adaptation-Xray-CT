@@ -317,7 +317,7 @@ class Mixed_COVID_CT_Xray_Sys(pl.LightningModule):
     def log_histogram(self):
         print("\nlog hist of weights")
 
-        enc_dict = self.model.features.state_dict()
+        enc_dict = self.model.feature_extractor.state_dict()
         for name, val in enc_dict.items():
             self.logger.experiment.add_histogram("features/" + name, val, self.current_epoch)
 
@@ -327,12 +327,12 @@ class Mixed_COVID_CT_Xray_Sys(pl.LightningModule):
 
     def freeze_for_transfer(self):
         print("Freeze encoder for {} epochs".format(self.hparams.freeze_epochs))
-        for param in self.model.features.parameters():
+        for param in self.model.feature_extractor.parameters():
             param.requires_grad = False
 
     def unfreeze_for_transfer(self):
         print("\n UnFreeze encoder at {}-th epoch".format(self.hparams.freeze_epochs))
-        for param in self.model.features.parameters():
+        for param in self.model.feature_extractor.parameters():
             param.requires_grad = True
 
     @staticmethod
